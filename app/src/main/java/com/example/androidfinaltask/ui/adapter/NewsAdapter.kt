@@ -37,7 +37,6 @@ class NewsAdapter(
                 tvSource.text = article.source?.name ?: ""
                 tvTime.text = formatTime(article.publishedAt)
 
-                // Load image with proper error handling and placeholder
                 val imageUrl = article.imageUrl?.trim()
                 if (imageUrl != null && imageUrl.isNotEmpty() && isValidImageUrl(imageUrl)) {
                     Glide.with(root.context)
@@ -48,7 +47,6 @@ class NewsAdapter(
                         .fallback(android.R.drawable.ic_menu_gallery)
                         .into(ivNews)
                 } else {
-                    // Clear image if URL is null, empty, or invalid
                     Glide.with(root.context)
                         .clear(ivNews)
                     ivNews.setImageResource(android.R.drawable.ic_menu_gallery)
@@ -62,7 +60,6 @@ class NewsAdapter(
 
         private fun isValidImageUrl(url: String): Boolean {
             return try {
-                // Check if it's a valid HTTP/HTTPS URL and not just "null" as string
                 (url.startsWith("http://", ignoreCase = true) || 
                 url.startsWith("https://", ignoreCase = true)) &&
                 !url.equals("null", ignoreCase = true)

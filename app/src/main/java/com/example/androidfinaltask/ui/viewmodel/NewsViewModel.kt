@@ -77,14 +77,10 @@ class NewsViewModel : ViewModel() {
     }
 
     private fun generateArticleId(article: Article): String {
-        // Generate a stable ID from URL (most reliable) or title + published date
-        // This ensures each article has a unique ID even if API doesn't provide one
         val url = article.url
         if (!url.isNullOrEmpty()) {
-            // Use URL as the ID (it's unique per article from NewsAPI)
             return url.hashCode().toString().replace("-", "n")
         }
-        // Fallback to title + published date
         val title = article.title
         val publishedAt = article.publishedAt ?: ""
         val combined = "$title$publishedAt"
@@ -96,16 +92,12 @@ class NewsViewModel : ViewModel() {
             _isLoading.value = true
             _error.value = null
             try {
-                // Fetch more articles to ensure we get at least 20 with images
                 val response = RetrofitClient.newsApiService.getTopHeadlines(pageSize = 100)
                 if (response.isSuccessful) {
                     val allArticles = response.body()?.articles ?: emptyList()
-                    // Filter to only include articles with valid images
                     val articlesWithImages = allArticles.filter { hasValidImage(it) }
                         .map { article ->
-                            // Generate stable ID from URL or title if ID is null
                             val stableId = article.id ?: generateArticleId(article)
-                            // Reset likes and comments to 0 - will be loaded from Firebase
                             article.copy(
                                 id = stableId,
                                 likes = 0,
@@ -113,12 +105,10 @@ class NewsViewModel : ViewModel() {
                             )
                         }
                     
-                    // Ensure we have at least 20 posts with images
                     if (articlesWithImages.size >= 20) {
                         _trendingNews.value = articlesWithImages.take(3)
-                        _latestNews.value = articlesWithImages.drop(3).take(17) // 3 + 17 = 20 total
+                        _latestNews.value = articlesWithImages.drop(3).take(17)
                     } else {
-                        // If we don't have enough with images, try fetching from different categories
                         loadNewsFromMultipleCategories()
                     }
                 } else {
@@ -138,7 +128,6 @@ class NewsViewModel : ViewModel() {
         val categories = listOf("general", "business", "technology", "sports", "entertainment", "health", "science")
         val allArticlesWithImages = mutableListOf<Article>()
         
-        // Fetch from multiple categories to get enough articles with images
         for (category in categories) {
             if (allArticlesWithImages.size >= 20) break
             
@@ -151,9 +140,7 @@ class NewsViewModel : ViewModel() {
                     val articles = response.body()?.articles ?: emptyList()
                     val articlesWithImages = articles.filter { hasValidImage(it) }
                         .map { article ->
-                            // Generate stable ID from URL or title if ID is null
                             val stableId = article.id ?: generateArticleId(article)
-                            // Reset likes and comments to 0 - will be loaded from Firebase
                             article.copy(
                                 id = stableId,
                                 likes = 0,
@@ -163,25 +150,21 @@ class NewsViewModel : ViewModel() {
                     allArticlesWithImages.addAll(articlesWithImages)
                 }
             } catch (e: Exception) {
-                // Continue with next category
             }
         }
         
-        // Remove duplicates based on article title
         val uniqueArticles = allArticlesWithImages.distinctBy { it.title }
         
         if (uniqueArticles.size >= 20) {
             _trendingNews.value = uniqueArticles.take(3)
-            _latestNews.value = uniqueArticles.drop(3).take(17) // 3 + 17 = 20 total
+            _latestNews.value = uniqueArticles.drop(3).take(17)
         } else {
-            // If still not enough, use what we have
             _trendingNews.value = uniqueArticles.take(3)
             _latestNews.value = uniqueArticles.drop(3)
         }
     }
 
     private fun loadDummyData() {
-        // Use placeholder images for dummy data
         val placeholderImageUrl = "https://via.placeholder.com/400x300?text=News+Article"
         val dummyArticles = (1..20).map { index ->
             Article(
@@ -196,22 +179,20 @@ class NewsViewModel : ViewModel() {
                 publishedAt = "2024-01-20T10:00:00Z",
                 category = "General",
                 views = (100..10000).random(),
-                likes = 0, // Will be loaded from Firebase
-                comments = 0 // Will be loaded from Firebase
+                likes = 0,
+                comments = 0
             )
         }
         _trendingNews.value = dummyArticles.take(3)
-        _latestNews.value = dummyArticles.drop(3).take(17) // 3 + 17 = 20 total
+        _latestNews.value = dummyArticles.drop(3).take(17)
     }
 
     fun selectArticle(article: Article) {
-        // Reset counts when selecting a new article
         _articleLikeCount.value = 0
         _articleCommentCount.value = 0
         _isArticleLiked.value = false
         _isArticleBookmarked.value = false
         
-        // Ensure article has an ID
         val articleWithId = if (article.id.isNullOrEmpty()) {
             val generatedId = generateArticleId(article)
             article.copy(id = generatedId)
@@ -226,7 +207,6 @@ class NewsViewModel : ViewModel() {
         viewModelScope.launch {
             val articleId = article.id
             if (articleId.isNullOrEmpty()) {
-                // If still no ID, generate one
                 val generatedId = generateArticleId(article)
                 loadArticleDataById(generatedId)
             } else {
@@ -236,17 +216,14 @@ class NewsViewModel : ViewModel() {
     }
 
     private suspend fun loadArticleDataById(articleId: String) {
-        // Load like count and status
         val likeCount = FirebaseRepository.getLikeCount(articleId)
         val isLiked = FirebaseRepository.isArticleLiked(articleId)
         _articleLikeCount.value = likeCount
         _isArticleLiked.value = isLiked
 
-        // Load comment count
         val commentCount = FirebaseRepository.getCommentCount(articleId)
         _articleCommentCount.value = commentCount
 
-        // Load bookmark status
         val isBookmarked = FirebaseRepository.isArticleBookmarked(articleId)
         _isArticleBookmarked.value = isBookmarked
     }
@@ -281,7 +258,6 @@ class NewsViewModel : ViewModel() {
                     val result = FirebaseRepository.addComment(articleId, comment)
                     if (result.isSuccess) {
                         android.util.Log.d("NewsViewModel", "Comment added successfully, reloading comments")
-                        // Reload comments after adding
                         loadCommentsForArticle(articleId)
                     } else {
                         val errorMsg = result.exceptionOrNull()?.message ?: "Failed to add comment"
@@ -306,11 +282,9 @@ class NewsViewModel : ViewModel() {
                     if (result.isSuccess) {
                         val isLiked = result.getOrNull() ?: false
                         _isArticleLiked.value = isLiked
-                        // Immediately update like count
                         val likeCount = FirebaseRepository.getLikeCount(articleId)
                         _articleLikeCount.value = likeCount
                     } else {
-                        // Handle error - user might not be logged in
                         val errorMessage = result.exceptionOrNull()?.message ?: "Failed to toggle like"
                         _error.value = errorMessage
                         android.util.Log.e("NewsViewModel", "Toggle like failed: $errorMessage")
@@ -336,7 +310,6 @@ class NewsViewModel : ViewModel() {
                         _isArticleBookmarked.value = isBookmarked
                         loadBookmarksFromFirebase()
                     } else {
-                        // Handle error - user might not be logged in
                         val errorMessage = result.exceptionOrNull()?.message ?: "Failed to toggle bookmark"
                         _error.value = errorMessage
                         android.util.Log.e("NewsViewModel", "Toggle bookmark failed: $errorMessage")
@@ -356,21 +329,18 @@ class NewsViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val bookmarkedIds = FirebaseRepository.getUserBookmarks()
-                // Update local bookmarked articles list
                 val allArticles = (_trendingNews.value ?: emptyList()) + (_latestNews.value ?: emptyList())
                 val bookmarked = allArticles.filter { article -> 
                     article.id != null && bookmarkedIds.contains(article.id)
                 }
                 _bookmarkedArticles.value = bookmarked.toMutableList()
                 
-                // Also update bookmark status for currently selected article
                 val selectedArticle = _selectedArticle.value
                 if (selectedArticle?.id != null) {
                     val isBookmarked = FirebaseRepository.isArticleBookmarked(selectedArticle.id)
                     _isArticleBookmarked.value = isBookmarked
                 }
             } catch (e: Exception) {
-                // Silently fail - bookmarks might not be available if user not logged in
             }
         }
     }
@@ -411,7 +381,6 @@ class NewsViewModel : ViewModel() {
     private fun loadTopics() {
         viewModelScope.launch {
             try {
-                // Fetch topics from NewsAPI by getting sources with different categories
                 val categories = listOf(
                     "business", "entertainment", "general", "health", 
                     "science", "sports", "technology"
@@ -419,14 +388,12 @@ class NewsViewModel : ViewModel() {
                 
                 val topicsList = mutableListOf<Topic>()
                 
-                // Fetch sources for each category to get real data
                 categories.forEachIndexed { index, category ->
                     try {
                         val response = RetrofitClient.newsApiService.getSources(category = category)
                         if (response.isSuccessful) {
                             val sources = response.body()?.sources ?: emptyList()
                             if (sources.isNotEmpty()) {
-                                // Use the first source's description or create a meaningful description
                                 val description = sources.firstOrNull()?.description 
                                     ?: "${category.replaceFirstChar { it.uppercase() }} news and updates"
                                 
@@ -441,7 +408,6 @@ class NewsViewModel : ViewModel() {
                             }
                         }
                     } catch (e: Exception) {
-                        // If API call fails for a category, add a default topic
                         topicsList.add(
                             Topic(
                                 id = (index + 1).toString(),
@@ -453,7 +419,6 @@ class NewsViewModel : ViewModel() {
                     }
                 }
                 
-                // Add additional topics from API if possible
                 val additionalCategories = listOf("politics", "lifestyle", "art")
                 additionalCategories.forEachIndexed { index, category ->
                     try {
@@ -475,11 +440,9 @@ class NewsViewModel : ViewModel() {
                             }
                         }
                     } catch (e: Exception) {
-                        // Skip if API call fails
                     }
                 }
                 
-                // If we got topics from API, use them; otherwise use defaults
                 if (topicsList.isNotEmpty()) {
                     _topics.value = topicsList
                 } else {
@@ -511,7 +474,6 @@ class NewsViewModel : ViewModel() {
                 if (response.isSuccessful) {
                     val sources = response.body()?.sources ?: emptyList()
                     val authorsList = sources.take(20).mapIndexed { index, source ->
-                        // NewsAPI doesn't return logos, so set logo as null
                         Author(
                             id = source.id ?: index.toString(),
                             name = source.name,
@@ -531,7 +493,6 @@ class NewsViewModel : ViewModel() {
     }
 
     private fun loadDefaultAuthors() {
-        // NewsAPI doesn't return logos, so set logo as null
         val defaultAuthors = listOf(
             Author("1", "BBC News", null, "1.5M", false),
             Author("2", "CNN", null, "900k", false),
@@ -571,7 +532,6 @@ class NewsViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                // Search in loaded articles first
                 val allArticles = (_trendingNews.value ?: emptyList()) + (_latestNews.value ?: emptyList())
                 val filteredArticles = allArticles.filter { article ->
                     article.title.lowercase().contains(searchTerm)
@@ -580,7 +540,6 @@ class NewsViewModel : ViewModel() {
                 if (filteredArticles.isNotEmpty()) {
                     _searchResults.value = filteredArticles
                 } else {
-                    // If no results in loaded articles, search via API
                     searchArticlesFromAPI(searchTerm)
                 }
             } catch (e: Exception) {

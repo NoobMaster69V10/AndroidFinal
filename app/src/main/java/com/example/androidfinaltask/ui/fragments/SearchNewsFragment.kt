@@ -43,21 +43,17 @@ class SearchNewsFragment : Fragment() {
             adapter = this@SearchNewsFragment.adapter
         }
 
-        // Observe search results - this will be updated when user searches
         viewModel.searchResults.observe(viewLifecycleOwner) { searchResults ->
             adapter.submitList(searchResults)
         }
 
-        // Observe search query to switch between search and latest news
         viewModel.searchQuery.observe(viewLifecycleOwner) { query ->
             if (query.isNullOrEmpty()) {
-                // When search is cleared, show latest news
                 val latestNews = viewModel.latestNews.value ?: emptyList()
                 adapter.submitList(latestNews)
             }
         }
 
-        // Initial load - show latest news
         viewModel.latestNews.observe(viewLifecycleOwner) { news ->
             val query = viewModel.searchQuery.value
             if (query.isNullOrEmpty()) {

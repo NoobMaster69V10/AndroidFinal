@@ -27,13 +27,11 @@ class AuthViewModel : ViewModel() {
     
     fun initPreferences(context: Context) {
         sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        // Check auth state after preferences are initialized
         checkAuthState()
     }
 
     fun checkAuthState() {
         if (FirebaseRepository.isUserLoggedIn()) {
-            // Check if "Remember me" was checked
             val rememberMe = sharedPreferences?.getBoolean(KEY_REMEMBER_ME, false) ?: false
             if (rememberMe) {
                 val userId = FirebaseRepository.getCurrentUserId()
@@ -42,7 +40,6 @@ class AuthViewModel : ViewModel() {
                     loadUserData(it)
                 }
             } else {
-                // User is logged in but "Remember me" was not checked, so sign out
                 signOut()
             }
         } else {
@@ -77,7 +74,6 @@ class AuthViewModel : ViewModel() {
             _authState.value = AuthState.Loading
             val result = FirebaseRepository.signIn(email, password)
             result.onSuccess {
-                // Save "Remember me" preference (use commit to ensure it's saved immediately)
                 sharedPreferences?.edit()?.putBoolean(KEY_REMEMBER_ME, rememberMe)?.commit()
                 _authState.value = AuthState.Success
                 loadUserData(it)
@@ -89,7 +85,6 @@ class AuthViewModel : ViewModel() {
 
     fun signOut() {
         FirebaseRepository.signOut()
-        // Clear "Remember me" preference (use commit to ensure it's saved immediately)
         sharedPreferences?.edit()?.putBoolean(KEY_REMEMBER_ME, false)?.commit()
         _currentUser.value = null
         _authState.value = AuthState.NotAuthenticated

@@ -140,7 +140,6 @@ object FirebaseRepository {
         }
     }
 
-    // Comments functions
     suspend fun addComment(articleId: String, comment: com.example.androidfinaltask.data.model.Comment): Result<String> {
         return try {
             val userId = getCurrentUserId()
@@ -202,7 +201,6 @@ object FirebaseRepository {
                 }
             }
             
-            // Sort by timestamp descending (newest first)
             comments.sortedByDescending { it.timestamp?.toLongOrNull() ?: 0L }
         } catch (e: Exception) {
             Log.e("FirebaseRepository", "Error loading comments: ${e.message}", e)
@@ -222,7 +220,6 @@ object FirebaseRepository {
         }
     }
 
-    // Likes functions
     suspend fun toggleLike(articleId: String): Result<Boolean> {
         return try {
             val userId = getCurrentUserId()
@@ -238,12 +235,10 @@ object FirebaseRepository {
             val snapshot = likeRef.get().await()
             
             if (snapshot.exists()) {
-                // Unlike
                 likeRef.delete().await()
                 Log.d("FirebaseRepository", "Like removed successfully")
                 Result.success(false)
             } else {
-                // Like
                 likeRef.set(hashMapOf(
                     "articleId" to articleId,
                     "userId" to userId,
@@ -284,7 +279,6 @@ object FirebaseRepository {
         }
     }
 
-    // Bookmarks functions
     suspend fun toggleBookmark(articleId: String): Result<Boolean> {
         return try {
             val userId = getCurrentUserId()
@@ -300,20 +294,16 @@ object FirebaseRepository {
             val snapshot = bookmarkRef.get().await()
             
             if (snapshot.exists()) {
-                // Unbookmark
                 bookmarkRef.delete().await()
-                // Update user's bookmarked articles list
                 updateUserBookmarks(userId, articleId, false)
                 Log.d("FirebaseRepository", "Bookmark removed successfully")
                 Result.success(false)
             } else {
-                // Bookmark
                 bookmarkRef.set(hashMapOf(
                     "articleId" to articleId,
                     "userId" to userId,
                     "timestamp" to System.currentTimeMillis()
                 )).await()
-                // Update user's bookmarked articles list
                 updateUserBookmarks(userId, articleId, true)
                 Log.d("FirebaseRepository", "Bookmark added successfully")
                 Result.success(true)
@@ -365,7 +355,6 @@ object FirebaseRepository {
                 updateUserInFirestore(updatedUser)
             }
         } catch (e: Exception) {
-            // Silently fail - bookmarks still work in their own collection
         }
     }
 }

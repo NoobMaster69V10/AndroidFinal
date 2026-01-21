@@ -41,13 +41,11 @@ class MainActivity : AppCompatActivity() {
         setupBottomNavigation()
         observeAuthState()
         
-        // Initialize preferences in ViewModel (this will also call checkAuthState)
         authViewModel.initPreferences(this)
 
         val isLoggedIn = FirebaseRepository.isUserLoggedIn()
         
         if (savedInstanceState == null) {
-            // Check if user should remain logged in (Remember me was checked)
             val rememberMe = getSharedPreferences("auth_prefs", MODE_PRIVATE)
                 .getBoolean("remember_me", false)
             
@@ -63,8 +61,6 @@ class MainActivity : AppCompatActivity() {
                     replace(R.id.fragment_container, splashFragment)
                 }
             } else {
-                // If logged in but "Remember me" not checked, sign out
-                // (checkAuthState in ViewModel should handle this, but we do it here too for safety)
                 if (isLoggedIn && !rememberMe) {
                     authViewModel.signOut()
                 }

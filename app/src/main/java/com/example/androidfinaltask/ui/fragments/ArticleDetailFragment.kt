@@ -28,11 +28,9 @@ class ArticleDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Observe errors
         viewModel.error.observe(viewLifecycleOwner) { errorMessage ->
             errorMessage?.let {
                 android.util.Log.e("ArticleDetailFragment", "Error: $it")
-                // You can show a toast or snackbar here if needed
                 android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show()
             }
         }
@@ -48,10 +46,8 @@ class ArticleDetailFragment : Fragment() {
                 binding.tvAuthor.text = selected.source?.name ?: selected.author ?: ""
                 binding.tvCategory.text = selected.category ?: "General"
                 
-                // Format time
                 binding.tvTime.text = formatTime(selected.publishedAt)
 
-                // Load article image
                 if (selected.imageUrl != null && selected.imageUrl.isNotEmpty()) {
                     Glide.with(this)
                         .load(selected.imageUrl)
@@ -63,32 +59,26 @@ class ArticleDetailFragment : Fragment() {
             }
         }
 
-        // Observe like count
         viewModel.articleLikeCount.observe(viewLifecycleOwner) { count ->
             binding.tvLikes.text = formatCount(count)
         }
 
-        // Observe comment count
         viewModel.articleCommentCount.observe(viewLifecycleOwner) { count ->
             binding.tvComments.text = formatCount(count)
         }
 
-        // Observe like status
         viewModel.isArticleLiked.observe(viewLifecycleOwner) { isLiked ->
             updateLikeIcon(isLiked)
         }
 
-        // Observe bookmark status
         viewModel.isArticleBookmarked.observe(viewLifecycleOwner) { isBookmarked ->
             updateBookmarkIcon(isBookmarked)
         }
 
-        // Like button click
         binding.ivLike.setOnClickListener {
             val article = viewModel.selectedArticle.value
             val articleId = article?.id
             if (!articleId.isNullOrEmpty()) {
-                // Check if user is logged in
                 val isLoggedIn = com.example.androidfinaltask.data.repository.FirebaseRepository.isUserLoggedIn()
                 if (!isLoggedIn) {
                     android.widget.Toast.makeText(
@@ -104,12 +94,10 @@ class ArticleDetailFragment : Fragment() {
             }
         }
 
-        // Bookmark button click
         binding.ivBookmark.setOnClickListener {
             val article = viewModel.selectedArticle.value
             val articleId = article?.id
             if (!articleId.isNullOrEmpty()) {
-                // Check if user is logged in
                 val isLoggedIn = com.example.androidfinaltask.data.repository.FirebaseRepository.isUserLoggedIn()
                 if (!isLoggedIn) {
                     android.widget.Toast.makeText(
@@ -125,7 +113,6 @@ class ArticleDetailFragment : Fragment() {
             }
         }
 
-        // Comment button click
         binding.ivComment.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(com.example.androidfinaltask.R.id.fragment_container, CommentFragment())
@@ -138,7 +125,6 @@ class ArticleDetailFragment : Fragment() {
         if (time == null || time.isEmpty()) return "Just now"
         
         return try {
-            // Parse ISO 8601 date format
             val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault())
             inputFormat.timeZone = java.util.TimeZone.getTimeZone("UTC")
             val date = inputFormat.parse(time)
@@ -164,7 +150,6 @@ class ArticleDetailFragment : Fragment() {
                 "Just now"
             }
         } catch (e: Exception) {
-            // Try alternative format
             try {
                 val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
                 val date = inputFormat.parse(time)
@@ -201,17 +186,15 @@ class ArticleDetailFragment : Fragment() {
     
     private fun updateLikeIcon(isLiked: Boolean) {
         binding.ivLike.setImageResource(com.example.androidfinaltask.R.drawable.ic_heart)
-        // Darker when not liked, lighter when liked
         if (isLiked) {
             binding.ivLike.alpha = 1.0f
         } else {
-            binding.ivLike.alpha = 0.4f // Darker/more transparent when not liked
+            binding.ivLike.alpha = 0.4f
         }
     }
-
+    
     private fun updateBookmarkIcon(isBookmarked: Boolean) {
         binding.ivBookmark.setImageResource(com.example.androidfinaltask.R.drawable.ic_bookmark_detail)
-        // Darker when not bookmarked, lighter when bookmarked
         if (isBookmarked) {
             binding.ivBookmark.alpha = 1.0f
         } else {

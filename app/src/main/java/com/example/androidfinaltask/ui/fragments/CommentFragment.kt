@@ -42,7 +42,6 @@ class CommentFragment : Fragment() {
             adapter = this@CommentFragment.adapter
         }
 
-        // Get article ID from selected article
         viewModel.selectedArticle.observe(viewLifecycleOwner) { article ->
             val newArticleId = article?.id
             if (newArticleId != null && newArticleId != articleId) {
@@ -51,14 +50,12 @@ class CommentFragment : Fragment() {
             }
         }
 
-        // Load comments immediately if article is already selected
         val currentArticle = viewModel.selectedArticle.value
         if (currentArticle?.id != null) {
             articleId = currentArticle.id
             viewModel.loadCommentsForArticle(articleId)
         }
 
-        // Observe comments
         viewModel.comments.observe(viewLifecycleOwner) { comments ->
             android.util.Log.d("CommentFragment", "Comments updated: ${comments.size} comments")
             adapter.submitList(comments)
