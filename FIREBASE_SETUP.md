@@ -20,3 +20,4 @@ The app will now:
 - Load real user data for profile screen
 - Handle logout functionality
 
+

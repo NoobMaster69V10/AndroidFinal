@@ -33,7 +33,11 @@ class ForgotPasswordFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.ivBack.setOnClickListener {
-            onBackClick?.invoke()
+            if (onBackClick != null) {
+                onBackClick?.invoke()
+            } else {
+                parentFragmentManager.popBackStack()
+            }
         }
 
         binding.btnSubmit.setOnClickListener {
@@ -60,7 +64,11 @@ class ForgotPasswordFragment : Fragment() {
                 is AuthState.Success -> {
                     binding.btnSubmit.isEnabled = true
                     Toast.makeText(requireContext(), "Password reset email sent!", Toast.LENGTH_SHORT).show()
-                    onBackClick?.invoke()
+                    if (onBackClick != null) {
+                        onBackClick?.invoke()
+                    } else {
+                        parentFragmentManager.popBackStack()
+                    }
                 }
                 is AuthState.Error -> {
                     binding.btnSubmit.isEnabled = true

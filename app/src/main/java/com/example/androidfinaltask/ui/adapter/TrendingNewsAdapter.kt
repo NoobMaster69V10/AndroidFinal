@@ -37,16 +37,37 @@ class TrendingNewsAdapter(
                 tvSource.text = article.source?.name ?: ""
                 tvTime.text = formatTime(article.publishedAt)
 
-                if (article.imageUrl != null) {
+                // Load image with proper error handling and placeholder
+                val imageUrl = article.imageUrl?.trim()
+                if (imageUrl != null && imageUrl.isNotEmpty() && isValidImageUrl(imageUrl)) {
                     Glide.with(root.context)
-                        .load(article.imageUrl)
+                        .load(imageUrl)
                         .centerCrop()
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .error(android.R.drawable.ic_menu_gallery)
+                        .fallback(android.R.drawable.ic_menu_gallery)
                         .into(ivNews)
+                } else {
+                    // Clear image if URL is null, empty, or invalid
+                    Glide.with(root.context)
+                        .clear(ivNews)
+                    ivNews.setImageResource(android.R.drawable.ic_menu_gallery)
                 }
 
                 root.setOnClickListener {
                     onItemClick(article)
                 }
+            }
+        }
+
+        private fun isValidImageUrl(url: String): Boolean {
+            return try {
+                // Check if it's a valid HTTP/HTTPS URL and not just "null" as string
+                (url.startsWith("http://", ignoreCase = true) || 
+                url.startsWith("https://", ignoreCase = true)) &&
+                !url.equals("null", ignoreCase = true)
+            } catch (e: Exception) {
+                false
             }
         }
 
@@ -65,4 +86,5 @@ class TrendingNewsAdapter(
         }
     }
 }
+
 

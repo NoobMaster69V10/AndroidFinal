@@ -5,7 +5,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.androidfinaltask.data.model.Author
 import com.example.androidfinaltask.databinding.ItemSourceBinding
 
@@ -35,13 +34,6 @@ class SourceAdapter(
                 tvSourceName.text = author.name
                 tvFollowers.text = "${author.followers} Followers"
                 btnFollow.text = if (author.isFollowing) "Following" else "+ Follow"
-                
-                if (author.logo != null) {
-                    Glide.with(root.context)
-                        .load(author.logo)
-                        .centerCrop()
-                        .into(ivLogo)
-                }
 
                 btnFollow.setOnClickListener {
                     onFollowClick(author)
@@ -60,4 +52,5 @@ class SourceAdapter(
         }
     }
 }
+
 

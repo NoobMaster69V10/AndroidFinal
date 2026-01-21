@@ -83,8 +83,10 @@ class HomeFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 val query = s?.toString()?.trim() ?: ""
                 if (query.isNotEmpty()) {
+                    viewModel.searchArticles(query)
                     showSearchResults()
                 } else {
+                    viewModel.searchArticles("")
                     showHomeContent()
                 }
             }

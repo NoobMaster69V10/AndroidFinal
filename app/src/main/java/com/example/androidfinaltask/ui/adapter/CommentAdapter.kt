@@ -6,7 +6,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.androidfinaltask.data.model.Comment
 import com.example.androidfinaltask.databinding.ItemCommentBinding
 
@@ -40,13 +39,6 @@ class CommentAdapter : ListAdapter<Comment, CommentAdapter.ViewHolder>(DiffCallb
                     tvSeeMore.visibility = View.VISIBLE
                 } else {
                     tvSeeMore.visibility = View.GONE
-                }
-
-                if (comment.authorImage != null) {
-                    Glide.with(root.context)
-                        .load(comment.authorImage)
-                        .circleCrop()
-                        .into(ivProfile)
                 }
             }
         }

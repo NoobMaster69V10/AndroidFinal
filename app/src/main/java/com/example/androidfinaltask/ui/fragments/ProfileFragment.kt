@@ -46,15 +46,24 @@ class ProfileFragment : Fragment() {
                 binding.tvUserName.text = user.fullName.ifEmpty { user.username.ifEmpty { "User" } }
                 binding.tvBio.text = user.bio.ifEmpty { "No bio yet" }
                 
+                // Load profile image with placeholder
                 if (user.profileImageUrl.isNotEmpty()) {
                     Glide.with(this)
                         .load(user.profileImageUrl)
                         .circleCrop()
+                        .placeholder(com.example.androidfinaltask.R.drawable.ic_profile)
+                        .error(com.example.androidfinaltask.R.drawable.ic_profile)
+                        .fallback(com.example.androidfinaltask.R.drawable.ic_profile)
                         .into(binding.ivProfile)
+                } else {
+                    // Set placeholder image when no profile image URL
+                    binding.ivProfile.setImageResource(com.example.androidfinaltask.R.drawable.ic_profile)
                 }
             } else {
                 binding.tvUserName.text = "User"
                 binding.tvBio.text = "No bio yet"
+                // Set placeholder image when user is null
+                binding.ivProfile.setImageResource(com.example.androidfinaltask.R.drawable.ic_profile)
             }
         }
 

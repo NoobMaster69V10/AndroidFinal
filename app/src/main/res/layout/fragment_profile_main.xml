@@ -67,12 +67,12 @@
                         android:id="@+id/ivProfile"
                         android:layout_width="80dp"
                         android:layout_height="80dp"
-                        android:background="@color/divider"
                         android:scaleType="centerCrop"
+                        android:src="@drawable/ic_profile"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        tools:src="@android:drawable/ic_menu_myplaces" />
+                        tools:src="@drawable/ic_profile" />
 
                     <TextView
                         android:id="@+id/tvUserName"
@@ -99,43 +99,6 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/tvUserName" />
-
-                    <LinearLayout
-                        android:id="@+id/llStats"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:orientation="horizontal"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/tvBio">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="2955\nfollowers"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp"
-                            android:gravity="center"
-                            android:layout_marginEnd="16dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="587\nfollowing"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp"
-                            android:gravity="center"
-                            android:layout_marginEnd="16dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="25\nheart"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp"
-                            android:gravity="center" />
-                    </LinearLayout>
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>

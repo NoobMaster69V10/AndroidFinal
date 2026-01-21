@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.androidfinaltask.databinding.FragmentSearchTopicsBinding
 import com.example.androidfinaltask.ui.adapter.TopicAdapter
 import com.example.androidfinaltask.ui.viewmodel.NewsViewModel
@@ -35,7 +35,7 @@ class SearchTopicsFragment : Fragment() {
         }
 
         binding.rvTopics.apply {
-            layoutManager = GridLayoutManager(context, 2)
+            layoutManager = LinearLayoutManager(context)
             adapter = this@SearchTopicsFragment.adapter
         }
 
@@ -49,4 +49,5 @@ class SearchTopicsFragment : Fragment() {
         _binding = null
     }
 }
+
 

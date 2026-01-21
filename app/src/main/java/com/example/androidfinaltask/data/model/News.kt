@@ -28,6 +28,8 @@ data class Article(
     val source: Source?,
     @SerializedName("urlToImage")
     val imageUrl: String?,
+    @SerializedName("url")
+    val url: String?,
     @SerializedName("publishedAt")
     val publishedAt: String?,
     val category: String? = null,
@@ -67,6 +69,8 @@ data class Comment(
     val authorImage: String?,
     val content: String,
     val replies: List<Comment>?,
-    val timestamp: String?
+    val timestamp: String?,
+    val articleId: String? = null,
+    val userId: String? = null
 )
 

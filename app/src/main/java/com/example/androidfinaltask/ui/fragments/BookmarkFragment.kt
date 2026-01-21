@@ -1,8 +1,6 @@
 package com.example.androidfinaltask.ui.fragments
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -55,27 +53,6 @@ class BookmarkFragment : Fragment() {
                 adapter.submitList(articles)
             }
         }
-
-        binding.etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                filterBookmarks(s.toString())
-            }
-        })
-    }
-
-    private fun filterBookmarks(query: String) {
-        val allBookmarks = viewModel.bookmarkedArticles.value ?: emptyList()
-        val filtered = if (query.isBlank()) {
-            allBookmarks
-        } else {
-            allBookmarks.filter {
-                it.title.contains(query, ignoreCase = true) ||
-                (it.description?.contains(query, ignoreCase = true) == true)
-            }
-        }
-        adapter.submitList(filtered)
     }
 
     override fun onDestroyView() {
@@ -83,4 +60,5 @@ class BookmarkFragment : Fragment() {
         _binding = null
     }
 }
+
 

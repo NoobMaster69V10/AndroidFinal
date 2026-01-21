@@ -36,9 +36,10 @@ class LoginFragment : Fragment() {
         binding.btnLogin.setOnClickListener {
             val email = binding.etUsername.text.toString()
             val password = binding.etPassword.text.toString()
+            val rememberMe = binding.cbRemember.isChecked
 
             if (validateInputs(email, password)) {
-                authViewModel.signIn(email, password)
+                authViewModel.signIn(email, password, rememberMe)
             }
         }
 
@@ -48,17 +49,6 @@ class LoginFragment : Fragment() {
             } else {
                 parentFragmentManager.beginTransaction()
                     .replace(com.example.androidfinaltask.R.id.fragment_container, SignupFragment())
-                    .addToBackStack(null)
-                    .commit()
-            }
-        }
-
-        binding.tvForgotPassword.setOnClickListener {
-            if (onForgotPasswordClick != null) {
-                onForgotPasswordClick?.invoke()
-            } else {
-                parentFragmentManager.beginTransaction()
-                    .replace(com.example.androidfinaltask.R.id.fragment_container, ForgotPasswordFragment())
                     .addToBackStack(null)
                     .commit()
             }

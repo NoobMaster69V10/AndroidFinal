@@ -1,5 +1,7 @@
 package com.example.androidfinaltask.ui.viewmodel
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -15,17 +17,33 @@ class AuthViewModel : ViewModel() {
 
     private val _authState = MutableLiveData<AuthState>(AuthState.NotAuthenticated)
     val authState: LiveData<AuthState> = _authState
-
-    init {
+    
+    private var sharedPreferences: SharedPreferences? = null
+    
+    companion object {
+        private const val PREFS_NAME = "auth_prefs"
+        private const val KEY_REMEMBER_ME = "remember_me"
+    }
+    
+    fun initPreferences(context: Context) {
+        sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        // Check auth state after preferences are initialized
         checkAuthState()
     }
 
     fun checkAuthState() {
         if (FirebaseRepository.isUserLoggedIn()) {
-            val userId = FirebaseRepository.getCurrentUserId()
-            userId?.let {
-                _authState.value = AuthState.Success
-                loadUserData(it)
+            // Check if "Remember me" was checked
+            val rememberMe = sharedPreferences?.getBoolean(KEY_REMEMBER_ME, false) ?: false
+            if (rememberMe) {
+                val userId = FirebaseRepository.getCurrentUserId()
+                userId?.let {
+                    _authState.value = AuthState.Success
+                    loadUserData(it)
+                }
+            } else {
+                // User is logged in but "Remember me" was not checked, so sign out
+                signOut()
             }
         } else {
             _authState.value = AuthState.NotAuthenticated
@@ -54,11 +72,13 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun signIn(email: String, password: String) {
+    fun signIn(email: String, password: String, rememberMe: Boolean = false) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             val result = FirebaseRepository.signIn(email, password)
             result.onSuccess {
+                // Save "Remember me" preference (use commit to ensure it's saved immediately)
+                sharedPreferences?.edit()?.putBoolean(KEY_REMEMBER_ME, rememberMe)?.commit()
                 _authState.value = AuthState.Success
                 loadUserData(it)
             }.onFailure {
@@ -69,6 +89,8 @@ class AuthViewModel : ViewModel() {
 
     fun signOut() {
         FirebaseRepository.signOut()
+        // Clear "Remember me" preference (use commit to ensure it's saved immediately)
+        sharedPreferences?.edit()?.putBoolean(KEY_REMEMBER_ME, false)?.commit()
         _currentUser.value = null
         _authState.value = AuthState.NotAuthenticated
     }

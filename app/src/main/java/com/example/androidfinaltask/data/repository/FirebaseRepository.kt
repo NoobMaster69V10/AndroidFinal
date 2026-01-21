@@ -27,6 +27,9 @@ object FirebaseRepository {
     }
     
     private const val USERS_COLLECTION = "users"
+    private const val COMMENTS_COLLECTION = "comments"
+    private const val LIKES_COLLECTION = "likes"
+    private const val BOOKMARKS_COLLECTION = "bookmarks"
     
     fun checkFirebaseInitialization(): Boolean {
         return try {
@@ -134,6 +137,235 @@ object FirebaseRepository {
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    // Comments functions
+    suspend fun addComment(articleId: String, comment: com.example.androidfinaltask.data.model.Comment): Result<String> {
+        return try {
+            val userId = getCurrentUserId()
+            if (userId == null) {
+                Log.e("FirebaseRepository", "User not logged in - cannot add comment")
+                return Result.failure(Exception("User not logged in. Please log in to comment."))
+            }
+            
+            Log.d("FirebaseRepository", "Adding comment: articleId=$articleId, userId=$userId, content=${comment.content}")
+            
+            val commentData = hashMapOf(
+                "id" to comment.id,
+                "articleId" to articleId,
+                "userId" to userId,
+                "authorName" to comment.authorName,
+                "authorImage" to (comment.authorImage ?: ""),
+                "content" to comment.content,
+                "timestamp" to (comment.timestamp ?: System.currentTimeMillis().toString())
+            )
+            firestore.collection(COMMENTS_COLLECTION)
+                .document(comment.id)
+                .set(commentData)
+                .await()
+            
+            Log.d("FirebaseRepository", "Comment added successfully: ${comment.id}")
+            Result.success(comment.id)
+        } catch (e: Exception) {
+            Log.e("FirebaseRepository", "Error adding comment: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getCommentsForArticle(articleId: String): List<com.example.androidfinaltask.data.model.Comment> {
+        return try {
+            Log.d("FirebaseRepository", "Loading comments for articleId: $articleId")
+            val snapshot = firestore.collection(COMMENTS_COLLECTION)
+                .whereEqualTo("articleId", articleId)
+                .get()
+                .await()
+            
+            Log.d("FirebaseRepository", "Found ${snapshot.size()} comments for articleId: $articleId")
+            
+            val comments = snapshot.documents.mapNotNull { doc ->
+                val data = doc.data
+                try {
+                    com.example.androidfinaltask.data.model.Comment(
+                        id = data?.get("id") as? String ?: doc.id,
+                        authorName = data?.get("authorName") as? String ?: "",
+                        authorImage = data?.get("authorImage") as? String,
+                        content = data?.get("content") as? String ?: "",
+                        replies = null,
+                        timestamp = data?.get("timestamp") as? String,
+                        articleId = data?.get("articleId") as? String,
+                        userId = data?.get("userId") as? String
+                    )
+                } catch (e: Exception) {
+                    Log.e("FirebaseRepository", "Error parsing comment ${doc.id}: ${e.message}")
+                    null
+                }
+            }
+            
+            // Sort by timestamp descending (newest first)
+            comments.sortedByDescending { it.timestamp?.toLongOrNull() ?: 0L }
+        } catch (e: Exception) {
+            Log.e("FirebaseRepository", "Error loading comments: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getCommentCount(articleId: String): Int {
+        return try {
+            val snapshot = firestore.collection(COMMENTS_COLLECTION)
+                .whereEqualTo("articleId", articleId)
+                .get()
+                .await()
+            snapshot.size()
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    // Likes functions
+    suspend fun toggleLike(articleId: String): Result<Boolean> {
+        return try {
+            val userId = getCurrentUserId()
+            if (userId == null) {
+                Log.e("FirebaseRepository", "User not logged in - cannot toggle like")
+                return Result.failure(Exception("User not logged in. Please log in to like articles."))
+            }
+            
+            Log.d("FirebaseRepository", "Toggling like: articleId=$articleId, userId=$userId")
+            
+            val likeDocId = "${articleId}_${userId}"
+            val likeRef = firestore.collection(LIKES_COLLECTION).document(likeDocId)
+            val snapshot = likeRef.get().await()
+            
+            if (snapshot.exists()) {
+                // Unlike
+                likeRef.delete().await()
+                Log.d("FirebaseRepository", "Like removed successfully")
+                Result.success(false)
+            } else {
+                // Like
+                likeRef.set(hashMapOf(
+                    "articleId" to articleId,
+                    "userId" to userId,
+                    "timestamp" to System.currentTimeMillis()
+                )).await()
+                Log.d("FirebaseRepository", "Like added successfully")
+                Result.success(true)
+            }
+        } catch (e: Exception) {
+            Log.e("FirebaseRepository", "Error toggling like: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun isArticleLiked(articleId: String): Boolean {
+        return try {
+            val userId = getCurrentUserId() ?: return false
+            val likeDocId = "${articleId}_${userId}"
+            val snapshot = firestore.collection(LIKES_COLLECTION)
+                .document(likeDocId)
+                .get()
+                .await()
+            snapshot.exists()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun getLikeCount(articleId: String): Int {
+        return try {
+            val snapshot = firestore.collection(LIKES_COLLECTION)
+                .whereEqualTo("articleId", articleId)
+                .get()
+                .await()
+            snapshot.size()
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    // Bookmarks functions
+    suspend fun toggleBookmark(articleId: String): Result<Boolean> {
+        return try {
+            val userId = getCurrentUserId()
+            if (userId == null) {
+                Log.e("FirebaseRepository", "User not logged in - cannot toggle bookmark")
+                return Result.failure(Exception("User not logged in. Please log in to bookmark articles."))
+            }
+            
+            Log.d("FirebaseRepository", "Toggling bookmark: articleId=$articleId, userId=$userId")
+            
+            val bookmarkDocId = "${articleId}_${userId}"
+            val bookmarkRef = firestore.collection(BOOKMARKS_COLLECTION).document(bookmarkDocId)
+            val snapshot = bookmarkRef.get().await()
+            
+            if (snapshot.exists()) {
+                // Unbookmark
+                bookmarkRef.delete().await()
+                // Update user's bookmarked articles list
+                updateUserBookmarks(userId, articleId, false)
+                Log.d("FirebaseRepository", "Bookmark removed successfully")
+                Result.success(false)
+            } else {
+                // Bookmark
+                bookmarkRef.set(hashMapOf(
+                    "articleId" to articleId,
+                    "userId" to userId,
+                    "timestamp" to System.currentTimeMillis()
+                )).await()
+                // Update user's bookmarked articles list
+                updateUserBookmarks(userId, articleId, true)
+                Log.d("FirebaseRepository", "Bookmark added successfully")
+                Result.success(true)
+            }
+        } catch (e: Exception) {
+            Log.e("FirebaseRepository", "Error toggling bookmark: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun isArticleBookmarked(articleId: String): Boolean {
+        return try {
+            val userId = getCurrentUserId() ?: return false
+            val bookmarkDocId = "${articleId}_${userId}"
+            val snapshot = firestore.collection(BOOKMARKS_COLLECTION)
+                .document(bookmarkDocId)
+                .get()
+                .await()
+            snapshot.exists()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun getUserBookmarks(): List<String> {
+        return try {
+            val userId = getCurrentUserId() ?: return emptyList()
+            val snapshot = firestore.collection(BOOKMARKS_COLLECTION)
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+            snapshot.documents.mapNotNull { it.getString("articleId") }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private suspend fun updateUserBookmarks(userId: String, articleId: String, add: Boolean) {
+        try {
+            val user = getUserFromFirestore(userId)
+            if (user != null) {
+                val bookmarks = user.bookmarkedArticles.toMutableList()
+                if (add && !bookmarks.contains(articleId)) {
+                    bookmarks.add(articleId)
+                } else if (!add) {
+                    bookmarks.remove(articleId)
+                }
+                val updatedUser = user.copy(bookmarkedArticles = bookmarks)
+                updateUserInFirestore(updatedUser)
+            }
+        } catch (e: Exception) {
+            // Silently fail - bookmarks still work in their own collection
         }
     }
 }

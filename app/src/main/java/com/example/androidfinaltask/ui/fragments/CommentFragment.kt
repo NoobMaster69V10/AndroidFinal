@@ -6,23 +6,22 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.androidfinaltask.data.model.Comment
+import com.example.androidfinaltask.data.repository.FirebaseRepository
 import com.example.androidfinaltask.databinding.FragmentCommentBinding
 import com.example.androidfinaltask.ui.adapter.CommentAdapter
+import com.example.androidfinaltask.ui.viewmodel.NewsViewModel
 import java.util.UUID
 
 class CommentFragment : Fragment() {
     private var _binding: FragmentCommentBinding? = null
     private val binding get() = _binding!!
+    private val viewModel: NewsViewModel by activityViewModels()
     
     private lateinit var adapter: CommentAdapter
-
-    private val comments = mutableListOf(
-        Comment(UUID.randomUUID().toString(), "Wilson Frank", null, "Lorem ipsum is simply dummy text of the printing and typesetting industry.", listOf(), null),
-        Comment(UUID.randomUUID().toString(), "Madelyn Bator", null, "Lorem ipsum is simply dummy text of the printing and typesetting industry.", listOf(), null),
-        Comment(UUID.randomUUID().toString(), "Monica Watson", null, "Lorem ipsum is simply dummy text of the printing and typesetting industry.", listOf(), null)
-    )
+    private var articleId: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,26 +42,68 @@ class CommentFragment : Fragment() {
             adapter = this@CommentFragment.adapter
         }
 
-        adapter.submitList(comments)
+        // Get article ID from selected article
+        viewModel.selectedArticle.observe(viewLifecycleOwner) { article ->
+            val newArticleId = article?.id
+            if (newArticleId != null && newArticleId != articleId) {
+                articleId = newArticleId
+                viewModel.loadCommentsForArticle(articleId)
+            }
+        }
+
+        // Load comments immediately if article is already selected
+        val currentArticle = viewModel.selectedArticle.value
+        if (currentArticle?.id != null) {
+            articleId = currentArticle.id
+            viewModel.loadCommentsForArticle(articleId)
+        }
+
+        // Observe comments
+        viewModel.comments.observe(viewLifecycleOwner) { comments ->
+            android.util.Log.d("CommentFragment", "Comments updated: ${comments.size} comments")
+            adapter.submitList(comments)
+        }
 
         binding.ivBack.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
         binding.ivSend.setOnClickListener {
-            val commentText = binding.etComment.text.toString()
-            if (!TextUtils.isEmpty(commentText)) {
+            val commentText = binding.etComment.text.toString().trim()
+            if (commentText.isNotEmpty() && articleId != null) {
+                val currentUser = FirebaseRepository.getCurrentUserId()
+                if (currentUser == null) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Please log in to comment",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
+                }
+                
+                val userName = FirebaseRepository.getCurrentUserEmail()?.split("@")?.get(0) ?: "User"
+                
                 val newComment = Comment(
-                    UUID.randomUUID().toString(),
-                    "You",
-                    null,
-                    commentText,
-                    listOf(),
-                    null
+                    id = UUID.randomUUID().toString(),
+                    authorName = userName,
+                    authorImage = null,
+                    content = commentText,
+                    replies = null,
+                    timestamp = System.currentTimeMillis().toString(),
+                    articleId = articleId,
+                    userId = currentUser
                 )
-                comments.add(0, newComment)
-                adapter.submitList(comments.toList())
+                
+                android.util.Log.d("CommentFragment", "Adding comment: articleId=$articleId, content=$commentText")
+                viewModel.addComment(articleId, newComment)
                 binding.etComment.text?.clear()
+            } else if (articleId == null) {
+                android.util.Log.e("CommentFragment", "Cannot add comment: articleId is null")
+                android.widget.Toast.makeText(
+                    context,
+                    "Error: Article not found",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -72,4 +113,5 @@ class CommentFragment : Fragment() {
         _binding = null
     }
 }
+
 

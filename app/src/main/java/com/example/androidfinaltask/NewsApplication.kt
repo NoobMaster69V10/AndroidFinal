@@ -12,3 +12,4 @@ class NewsApplication : Application() {
     }
 }
 
+
